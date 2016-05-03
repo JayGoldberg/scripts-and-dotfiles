@@ -1,12 +1,11 @@
-#!/bin/env bash
+#!/usr/bin/env bash
 
-cpulim=${$1:-768} # 0-1024
-memlim=${$2:-4096} # in MB
+cpulim=${1:-768} # 0-1024
+memlim=${2:-4096} # in MB
+processname=${3:-hogger$$}
 
 shift
 shift
-
-process="${$3:-chrome$$}""
 
 u=$(id -un)
 g=$(id -gn)
@@ -14,11 +13,14 @@ g=$(id -gn)
 # create cgroup with -a (parameter owner) and -t (tasks file owner)
 # if not exists, create
 echo Opening sudo to create user-managed cgroup space
-sudo cgcreate -a "$u:$g" -t "$u:$g" -g cpu,memory:${process}
+sudo cgcreate -a "$u:$g" -t "$u:$g" -g cpu,memory:${processnamep}
 
-echo $cpulim > /sys/fs/cgroup/cpu/${process}/cpu.shares
-echo $(($memlim*1024*1024)) > /sys/fs/cgroup/memory/${process}/memory.limit_in_bytes
-cgexec -g cpu,memory:chrome $@
+echo Setting CPU limit...
+echo $cpulim > /sys/fs/cgroup/cpu/${processname}/cpu.shares
+echo Setting memory limit...
+echo $(($memlim*1024*1024)) > /sys/fs/cgroup/memory/${processname}/memory.limit_in_bytes
+echo Executing the target binary using bash to get access to .bashrc "$@"
+cgexec -g cpu,memory:${processname} bash -c "$@"
 
 # delete the cgroup when script exits
-sudo cgdelete memory,cpu:${process}
+sudo cgdelete memory,cpu:${processname}
