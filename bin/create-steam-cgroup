@@ -1,12 +1,19 @@
 #!/bin/env bash
 
-cpulim=819 # 0-1024
-memlim=4096 # in MB
+cpulim=${$1:-768} # 0-1024
+memlim=${$2:-4096} # in MB
 
-process="chrome"
+shift
+shift
+
+process="${$3:-chrome$$}""
 
 u=$(id -un)
 g=$(id -gn)
+
+# create cgroup with -a (parameter owner) and -t (tasks file owner)
+# if not exists, create
+echo Opening sudo to create user-managed cgroup space
 sudo cgcreate -a "$u:$g" -t "$u:$g" -g cpu,memory:${process}
 
 echo $cpulim > /sys/fs/cgroup/cpu/${process}/cpu.shares
