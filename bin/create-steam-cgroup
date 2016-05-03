@@ -1,7 +1,17 @@
-#!/bin/sh
+#!/bin/env bash
+
+cpulim=819 # 0-1024
+memlim=4096 # in MB
+
+process="chrome"
+
 u=$(id -un)
 g=$(id -gn)
-sudo cgcreate -a "$u:$g" -t "$u:$g" -g cpu,memory,blkio:steam
-echo 768 | sudo tee /sys/fs/cgroup/cpu/steam/cpu.shares > /dev/null
-echo $((1024*1024*1024*5)) | sudo tee /sys/fs/cgroup/memory/steam/memory.limit_in_bytes > /dev/null
-echo Created steam cgroup
+sudo cgcreate -a "$u:$g" -t "$u:$g" -g cpu,memory:${process}
+
+echo $cpulim > /sys/fs/cgroup/cpu/${process}/cpu.shares
+echo $(($memlim*1024*1024)) > /sys/fs/cgroup/memory/${process}/memory.limit_in_bytes
+cgexec -g cpu,memory:chrome $@
+
+# delete the cgroup when script exits
+sudo cgdelete memory,cpu:${process}
